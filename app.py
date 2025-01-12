@@ -16,6 +16,15 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 
+# Predefined ticker options
+COMPANY_TICKERS = {
+    "Google (GOOG)": "GOOG",
+    "Apple (AAPL)": "AAPL",
+    "Amazon (AMZN)": "AMZN",
+    "Microsoft (MSFT)": "MSFT",
+    "Tesla (TSLA)": "TSLA"
+}
+
 # Function to fetch stock data
 def fetch_stock_data(ticker, start_date, end_date):
     stock = yf.download(ticker, start=start_date, end=end_date)
@@ -44,26 +53,36 @@ def predict_stock_prices(data, days_to_predict=30):
     return future_dates, predicted_prices
 
 # Streamlit interface
-st.title("Stock Price Tracker and Predictor 📈")
-st.sidebar.header("Input Parameters")
+st.set_page_config(page_title="Stock Price Tracker", layout="wide", page_icon="📈")
 
-# User inputs
-ticker = st.sidebar.text_input("Stock Ticker (e.g., AAPL, GOOG):", "AAPL")
-start_date = st.sidebar.date_input("Start Date", datetime(2020, 1, 1))
-end_date = st.sidebar.date_input("End Date", datetime.now())
+# Title and description
+st.title("Stock Price Tracker and Predictor 📈")
+st.write("Analyze historical stock data and predict future stock prices with linear regression.")
+
+# Sidebar for user inputs
+st.sidebar.header("Input Parameters")
+company_name = st.sidebar.selectbox("Select a Company:", options=list(COMPANY_TICKERS.keys()))
+ticker = COMPANY_TICKERS[company_name]
+start_date = st.sidebar.date_input("Select the Start Date for Raw Data", datetime(2020, 1, 1))
+end_date = st.sidebar.date_input("Select the End Date for Raw Data", datetime.now())
 days_to_predict = st.sidebar.slider("Days to Predict", 1, 60, 30)
 
 if st.sidebar.button("Fetch Data"):
     # Fetch data
     data = fetch_stock_data(ticker, start_date, end_date)
-    st.write(f"### Stock Data for {ticker}")
-    st.line_chart(data['Close'])
 
-    # Predict future prices
-    future_dates, predicted_prices = predict_stock_prices(data, days_to_predict)
-    st.write(f"### Predicted Prices for Next {days_to_predict} Days")
-    st.line_chart(predicted_prices)
+    if not data.empty:
+        # Display stock data chart
+        st.markdown(f"### Stock Data for {company_name}")
+        st.line_chart(data['Close'])
 
-    # Display raw data
-    st.write("### Raw Data")
-    st.dataframe(data)
+        # Predict future prices
+        st.markdown(f"### Predicted Prices for Next {days_to_predict} Days")
+        future_dates, predicted_prices = predict_stock_prices(data, days_to_predict)
+        st.line_chart(predicted_prices)
+
+        # Display raw data
+        st.markdown(f"### Raw Data Used for Predictions (From {start_date} to {end_date})")
+        st.dataframe(data)
+    else:
+        st.error(f"No data available for {company_name} within the selected date range.")
